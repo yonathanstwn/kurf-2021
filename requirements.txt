@@ -1,0 +1,6 @@
+PyYAML~=5.4.1
+matplotlib~=3.4.2
+numpy~=1.21.1
+networkx~=2.6.2
+cvxpy~=1.1.14
+gurobipy~=9.1.2
