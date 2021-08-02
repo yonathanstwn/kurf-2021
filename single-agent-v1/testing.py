@@ -1,6 +1,7 @@
 from main import *
 import subprocess
 import os
+from path import CBS_DIR_PATH
 
 switch = True
 
@@ -26,7 +27,7 @@ if switch:
 else:
     # Shortest Path Test
     # Test fail when start == goal
-    os.chdir('build')
+    os.chdir(CBS_DIR_PATH)
     success_count = 0
     failed = []
     for i in range(100):
