@@ -10,6 +10,7 @@ def main_sp(example_number):
     path, success = main_mapf(problem_file, SOLUTION_YAML)
     return success
 
+
 def generate_cbs_solution(filepath):
     os.chdir(CBS_DIR_PATH)
     subprocess.run('./cbs -i ' + filepath + ' -o output.yaml', shell=True, capture_output=True)
@@ -27,4 +28,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # Main SP Function
     main_sp(args.ex_no)
-
