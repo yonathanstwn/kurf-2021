@@ -37,11 +37,36 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     # Determine max t
     max_t = max(len(desired_path) - 1, ori_makespan)
 
-    # occupied_nodes[t] = list of nodes occupied by agents (except agent0) at time=t.
-    occupied_nodes = [[] for _ in range(ori_makespan + 1)]
+    # l_original
+    l_original = []
+    for i, n in enumerate(graph.nodes):
+        if graph.nodes[n].get('obstacle'):
+            l_original.append(1)
+        else:
+            l_original.append(0)
+
+    # occupied_nodes[t] = list of edges corresponding to movement of agents (except agent0)
+    # from time=t to time=t+1
+    # nodes_passed = set of all the nodes that are ever passed by any agent at any time
+    occupied_nodes = [{} for _ in range(ori_makespan + 1)]
+    nodes_passed = set()
     for path in schedule.values():
-        for pos in path:
-            occupied_nodes[pos['t']].append((pos['x'], pos['y']))
+        for t, pos in enumerate(path):
+            n = (pos['x'], pos['y'])
+            if n == desired_path[t]:  # add min if invalid index t
+                print("INVALID DESIRED PATH - Desired path of agent collides with other agents' paths")
+                return []
+            nodes_passed.add(n)
+        if len(path) == 1:
+            for i in range(ori_makespan):
+                temp = (path[0]['x'], path[0]['y'])
+                occupied_nodes[i][temp] = temp
+        for t in range(len(path) - 1):
+            temp = (path[t + 1]['x'], path[t + 1]['y'])
+            occupied_nodes[t][(path[t]['x'], path[t]['y'])] = temp
+            if t + 1 == len(path) - 1:
+                for i in range(t + 1, ori_makespan + 1):
+                    occupied_nodes[i][temp] = temp
 
     # Auxiliary variables
     edges = []
@@ -51,13 +76,16 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
             next_nodes = [nei for nei in graph[n]]
             next_nodes.append(n)
             for next_node in next_nodes:
-                if t + 1 > ori_makespan or next_node not in occupied_nodes[t + 1]:
+                if (next_node not in occupied_nodes[min(t, ori_makespan)].values() and
+                        occupied_nodes[min(t, ori_makespan)].get(next_node) != n):
                     edge = (n, next_node)
                     idx = len(edges)
                     edge_t_2idx[(edge, t)] = idx
                     edges.append(edge)
     edge2lidx = {}
+    node2lidx = {}
     for i, n in enumerate(graph.nodes):
+        node2lidx[n] = i
         for nei in graph[n]:
             edge = (n, nei)
             edge2lidx[edge] = i
@@ -82,14 +110,6 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
         j = edge_t_2idx[((desired_path[p], desired_path[p + 1]), p)]
         xzero[j] = 1
 
-    # l_original
-    l_original = []
-    for i, n in enumerate(graph.nodes):
-        if graph.nodes[n].get('obstacle'):
-            l_original.append(1)
-        else:
-            l_original.append(0)
-
     # - inverse optimization problem -
     # Variables
     l_ = cp.Variable(len(l_original), boolean=True)
@@ -103,7 +123,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
         edge_w = 0.99
         if edge[0] != edge[1]:
             i = edge2lidx[edge]
-            edge_w = l_[i] * 10000 + 1
+            edge_w = l_[i] * 100 + 1
         if xzero[j] == 1:
             # sum_i a_ij * pi_i = edge_w,              for all j in desired path
             constraints.append(cp.sum(cp.multiply(A[:, j], pi_)) == edge_w)
@@ -114,15 +134,15 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     for j in range(len(edges)):
         if xzero[j] == 0:
             constraints.append(lambda_[j] >= 0)
+    # l_[node] == 0 for all nodes in other agents' paths
+    for n in nodes_passed:
+        constraints.append(l_[node2lidx[n]] == 0)
     # solve with cvxpy
     prob = cp.Problem(cp.Minimize(cost), constraints)
     value = prob.solve(solver=cp.ECOS_BB)
     if value == float('inf'):
         print("inverse shortest path FAILED")
         return []
-
-    for i, n in enumerate(graph.nodes):
-        print(n, l_original[i], l_.value[i])
 
     # New obstacles set
     cells = [n for n in graph.nodes]

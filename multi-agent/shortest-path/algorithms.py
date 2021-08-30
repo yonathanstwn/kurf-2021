@@ -30,8 +30,8 @@ def create_graph(raw_dict):
 
 def check_obstacles(graph, path, occupied_nodes):
     obstacles = [n for n in graph.nodes if graph.nodes[n].get('obstacle')]
-    for t, n in enumerate(path):
-        if n in obstacles or n in occupied_nodes[t]:
+    for t in range(1, len(path)):
+        if path[t] in obstacles or path[t] in occupied_nodes[t-1].values() or occupied_nodes[t-1].get(path[t]) == path[t-1]:
             return False
     return True
 
@@ -43,12 +43,23 @@ def mapf(graph, raw_solution):
     makespan = raw_solution['statistics']['makespan']
     schedule = raw_solution['schedule']
     agent0 = schedule.pop('agent0')
+    start = (agent0[0]['x'], agent0[0]['y'])
+    goal = (agent0[-1]['x'], agent0[-1]['y'])
 
-    # occupied_nodes[t] = list of nodes occupied by agents (except agent0) at time=t.
-    occupied_nodes = [[] for _ in range(makespan + 1)]
+    # occupied_nodes[t] = list of edges corresponding to movement of agents (except agent0)
+    # from time=t to time=t+1
+    occupied_nodes = [{} for _ in range(makespan)]
     for path in schedule.values():
-        for pos in path:
-            occupied_nodes[pos['t']].append((pos['x'], pos['y']))
+        if len(path) == 1:
+            for i in range(makespan):
+                temp = (path[0]['x'], path[0]['y'])
+                occupied_nodes[i][temp] = temp
+        for t in range(len(path) - 1):
+            temp = (path[t + 1]['x'], path[t + 1]['y'])
+            occupied_nodes[t][(path[t]['x'], path[t]['y'])] = temp
+            if t + 1 == len(path) - 1:
+                for i in range(t + 1, makespan):
+                    occupied_nodes[i][temp] = temp
 
     edges = []
     weights = []
@@ -58,13 +69,15 @@ def mapf(graph, raw_solution):
             next_nodes = [nei for nei in graph[n]]
             next_nodes.append(n)
             for next_node in next_nodes:
-                if next_node not in occupied_nodes[t + 1]:
+                if next_node not in occupied_nodes[t].values() and occupied_nodes[t].get(next_node) != n:
                     edge = (n, next_node)
                     idx = len(edges)
                     edge_t_2idx[(edge, t)] = idx
                     edges.append(edge)
                     if graph.nodes[next_node].get('obstacle'):
                         weights.append(1000)
+                    elif next_node == n and n == goal:
+                        weights.append(0.90)
                     elif next_node == n:
                         weights.append(0.99)
                     else:
@@ -73,12 +86,9 @@ def mapf(graph, raw_solution):
     # Matrix A and b
     A = np.zeros((len(graph.nodes) * (makespan + 1), len(edges)))
     b = np.zeros(len(graph.nodes) * (makespan + 1))
-    start = (agent0[0]['x'], agent0[0]['y'])
-    goal = (agent0[-1]['x'], agent0[-1]['y'])
     if start == goal:
         print("Automatic success - same start and goal")
         return [start], True
-    goal_time = agent0[-1]['t']
     for t in range(makespan + 1):
         for idx, n in enumerate(graph.nodes):
             neighbours = [nei for nei in graph[n]]
@@ -92,7 +102,7 @@ def mapf(graph, raw_solution):
                     A[len(graph.nodes) * t + idx, j] = -1
             if n == start and t == 0:
                 b[idx] = 1
-            elif n == goal and t == goal_time:
+            elif n == goal and t == makespan:
                 b[len(graph.nodes) * t + idx] = -1
 
     # Solve with cvxpy
@@ -104,12 +114,19 @@ def mapf(graph, raw_solution):
         print("shortest path LP failed")
         return []
 
-    # Sanity Check
+    # Extract path
     path = [start]
     success = False
     for i, v in enumerate(x.value):
         if round(v) == 1 and edges[i][0] == path[-1]:
             path.append(edges[i][1])
+    # Remove trailing duplicate nodes, i.e. when agent is already in goal node.
+    idx = len(path) - 1
+    while path[idx] == path[idx - 1]:
+        path.pop()
+        idx -= 1
+
+    # Sanity Check
     cbs_path = [(pos['x'], pos['y']) for pos in agent0]
     if len(path) == len(cbs_path) and check_obstacles(graph, path, occupied_nodes):
         success = True
