@@ -2,6 +2,16 @@ import yaml
 import networkx as nx
 import cvxpy as cp
 import numpy as np
+import argparse
+import subprocess
+from path import *
+from additional import visualize
+
+
+def create_yaml(data, filename):
+    with open(filename, 'w') as stream:
+        yaml.dump(data, stream)
+        print(filename, "created successfully")
 
 
 def parse_yaml(filepath):
@@ -34,6 +44,21 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     schedule = raw_solution['schedule']
     schedule.pop(agent_name)
 
+    # Check validity of desired path
+    for path in schedule.values():
+        for t, pos in enumerate(path):
+            n = (pos['x'], pos['y'])
+            if n == desired_path[min(t, len(desired_path) - 1)]:
+                print("INVALID DESIRED PATH - Desired path of agent collides with other agents")
+                return []
+    if len(desired_path) > ori_makespan + 1:
+        for t in range(ori_makespan, len(desired_path)):
+            for path in schedule.values():
+                last_node = (path[-1]['x'], path[-1]['y'])
+                if desired_path[t] == last_node:
+                    print("INVALID DESIRED PATH - Desired path of agent collides with other agents")
+                    return []
+
     # Determine max t
     max_t = max(len(desired_path) - 1, ori_makespan)
 
@@ -53,12 +78,9 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     for path in schedule.values():
         for t, pos in enumerate(path):
             n = (pos['x'], pos['y'])
-            if n == desired_path[t]:  # add min if invalid index t
-                print("INVALID DESIRED PATH - Desired path of agent collides with other agents' paths")
-                return []
             nodes_passed.add(n)
         if len(path) == 1:
-            for i in range(ori_makespan):
+            for i in range(ori_makespan + 1):
                 temp = (path[0]['x'], path[0]['y'])
                 occupied_nodes[i][temp] = temp
         for t in range(len(path) - 1):
@@ -76,6 +98,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
             next_nodes = [nei for nei in graph[n]]
             next_nodes.append(n)
             for next_node in next_nodes:
+                # Check to avoid collisions with other agents
                 if (next_node not in occupied_nodes[min(t, ori_makespan)].values() and
                         occupied_nodes[min(t, ori_makespan)].get(next_node) != n):
                     edge = (n, next_node)
@@ -86,6 +109,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     node2lidx = {}
     for i, n in enumerate(graph.nodes):
         node2lidx[n] = i
+        edge2lidx[(n, n)] = i
         for nei in graph[n]:
             edge = (n, nei)
             edge2lidx[edge] = i
@@ -113,17 +137,15 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     # - inverse optimization problem -
     # Variables
     l_ = cp.Variable(len(l_original), boolean=True)
-    pi_ = cp.Variable((len(graph.nodes) * (max_t + 1)))
-    lambda_ = cp.Variable(len(edges) * max_t)
+    pi_ = cp.Variable(len(graph.nodes) * (max_t + 1))
+    lambda_ = cp.Variable(len(edges))
     # Cost
     cost = cp.norm1(l_ - l_original)
     # Constraints
     constraints = []
     for j, edge in enumerate(edges):
-        edge_w = 0.99
-        if edge[0] != edge[1]:
-            i = edge2lidx[edge]
-            edge_w = l_[i] * 100 + 1
+        i = edge2lidx[edge]
+        edge_w = l_[i] * 1000 + 1
         if xzero[j] == 1:
             # sum_i a_ij * pi_i = edge_w,              for all j in desired path
             constraints.append(cp.sum(cp.multiply(A[:, j], pi_)) == edge_w)
@@ -149,7 +171,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     new_obstacles = []
     for i, v in enumerate(l_.value):
         if round(v) == 1:
-            new_obstacles.append(cells[i])
+            new_obstacles.append(list(cells[i]))
 
     # Return
     return new_obstacles
@@ -193,19 +215,54 @@ def create_new_dct(old_dct, new_path, agent_name, new_obstacles):
     new_dct = old_dct
     for agent in new_dct['agents']:
         if agent['name'] == agent_name:
-            agent['start'] = new_path[0]
-            agent['goal'] = new_path[-1]
+            agent['start'] = list(new_path[0])
+            agent['goal'] = list(new_path[-1])
     new_dct['map']['obstacles'] = new_obstacles
     return new_dct
 
 
-def main_inv_mapf(problem_file, solution_file, agent_name, desired_path=None):
+def sanity_check(new_cbs_solution, raw_solution, agent_name, desired_path):
+    print(raw_solution['statistics'])
+    print(new_cbs_solution['statistics'])
+
+
+def generate_cbs_solution(filepath):
+    os.chdir(CBS_DIR_PATH)
+    subprocess.run('./cbs -i ' + filepath + ' -o output.yaml', shell=True, capture_output=True)
+
+
+def generate_animation(new_dct, new_schedule):
+    animation = visualize.Animation(new_dct, new_schedule)
+    animation.show()
+
+
+def main_inv_mapf(example_number, agent_name, desired_path=None):
+    problem_file = EXAMPLES_PATH + "/agents5/map_8by8_obst12_agents5_ex" + example_number + ".yaml"
+    generate_cbs_solution(problem_file)
     raw_problem = parse_yaml(problem_file)
     if desired_path is None:
         desired_path = create_desired_path(raw_problem, agent_name)
-    raw_solution = parse_yaml(solution_file)
+    raw_solution = parse_yaml(SOLUTION_YAML)
     graph = create_graph(raw_problem)
     new_obstacles = inv_mapf(graph, raw_solution, desired_path, agent_name)
     new_schedule = create_new_schedule(raw_solution, desired_path, agent_name)
     new_dct = create_new_dct(raw_problem, desired_path, agent_name, new_obstacles)
+    new_filename = "new_map.yaml"
+    create_yaml(new_dct, new_filename)
+    generate_cbs_solution(new_filename)
+    new_cbs_solution = parse_yaml(SOLUTION_YAML)
+    sanity_check(new_cbs_solution, raw_solution, agent_name, desired_path)
     return new_dct, new_schedule
+
+
+if __name__ == '__main__':
+    # Terminal Parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ex_no", help="input file example number")
+    parser.add_argument("agent_name", help="the agent that will have a new desired path")
+    args = parser.parse_args()
+    # Main SP Function
+    ## This custom desired path should create new obstacles, but the algorithm does not currently ##
+    custom_dp = [(7, 4), (7, 5), (7, 6), (7, 7), (6, 7), (5, 7), (5, 6), (5, 5), (5, 4)]
+    new_dct, new_schedule = main_inv_mapf(args.ex_no, args.agent_name, custom_dp)
+    generate_animation(new_dct, new_schedule)

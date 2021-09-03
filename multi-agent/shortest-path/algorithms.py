@@ -69,6 +69,7 @@ def mapf(graph, raw_solution):
             next_nodes = [nei for nei in graph[n]]
             next_nodes.append(n)
             for next_node in next_nodes:
+                # Check to avoid collisions with other agents
                 if next_node not in occupied_nodes[t].values() and occupied_nodes[t].get(next_node) != n:
                     edge = (n, next_node)
                     idx = len(edges)
