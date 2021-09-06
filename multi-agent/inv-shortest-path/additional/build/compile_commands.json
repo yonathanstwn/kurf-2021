@@ -1,0 +1,52 @@
+[
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/sipp.dir/example/sipp.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/sipp.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/sipp.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/next_best_assignment.dir/example/next_best_assignment.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/next_best_assignment.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/next_best_assignment.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/ecbs.dir/example/ecbs.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/ecbs.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/ecbs.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/cbs_ta.dir/example/cbs_ta.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/cbs_ta.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/cbs_ta.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/cbs.dir/example/cbs.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/cbs.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/cbs.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/mapf_prioritized_sipp.dir/example/mapf_prioritized_sipp.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/mapf_prioritized_sipp.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/mapf_prioritized_sipp.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/ecbs_ta.dir/example/ecbs_ta.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/ecbs_ta.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/ecbs_ta.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/assignment.dir/example/assignment.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/assignment.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/assignment.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/a_star_epsilon.dir/example/a_star_epsilon.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/a_star_epsilon.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/a_star_epsilon.cpp"
+},
+{
+  "directory": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++ -DBOOST_ALL_NO_LIB -DBOOST_PROGRAM_OPTIONS_DYN_LINK -I\"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/include\" -isystem /usr/local/include  -Wall -Wextra -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=c++14 -o CMakeFiles/a_star.dir/example/a_star.cpp.o -c \"/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/a_star.cpp\"",
+  "file": "/Users/yonathan/Documents/Internships/KURF 2021/libMultiRobotPlanning-master/example/a_star.cpp"
+}
+]

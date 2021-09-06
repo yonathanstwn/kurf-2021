@@ -161,7 +161,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
         constraints.append(l_[node2lidx[n]] == 0)
     # solve with cvxpy
     prob = cp.Problem(cp.Minimize(cost), constraints)
-    value = prob.solve(solver=cp.ECOS_BB)
+    value = prob.solve(solver=cp.GUROBI)
     if value == float('inf'):
         print("inverse shortest path FAILED")
         return []
@@ -177,10 +177,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     return new_obstacles
 
 
-# Create default desired path from shortest path with zero obstacles
-# Example:
-# Start: (0, 0), Goal: (2, 3)
-# Desired Path: [(0, 0), (1, 0), (2, 0), (2, 1), (2, 2), (2, 3)]
+# Create default desired path which is shortest path with zero obstacles
 def create_desired_path(raw_problem, agent_name):
     dp = []
     start, goal = [], []
@@ -211,19 +208,25 @@ def create_new_schedule(old_schedule, new_path, agent_name):
     return new_schedule
 
 
-def create_new_dct(old_dct, new_path, agent_name, new_obstacles):
-    new_dct = old_dct
-    for agent in new_dct['agents']:
+def create_new_problem(old_problem, new_path, agent_name, new_obstacles):
+    new_problem = old_problem
+    for agent in new_problem['agents']:
         if agent['name'] == agent_name:
             agent['start'] = list(new_path[0])
             agent['goal'] = list(new_path[-1])
-    new_dct['map']['obstacles'] = new_obstacles
-    return new_dct
+    new_problem['map']['obstacles'] = new_obstacles
+    return new_problem
 
 
-def sanity_check(new_cbs_solution, raw_solution, agent_name, desired_path):
-    print(raw_solution['statistics'])
-    print(new_cbs_solution['statistics'])
+def sanity_check(new_cbs_solution, agent_name, desired_path):
+    print(desired_path)
+    print(new_cbs_solution['schedule'][agent_name])
+    if len(new_cbs_solution['schedule'][agent_name]) == len(desired_path):
+        print("Multi-Agent ISP Success!")
+        return True
+    else:
+        print("Multi-Agent ISP Fail!")
+        return False
 
 
 def generate_cbs_solution(filepath):
@@ -231,38 +234,51 @@ def generate_cbs_solution(filepath):
     subprocess.run('./cbs -i ' + filepath + ' -o output.yaml', shell=True, capture_output=True)
 
 
-def generate_animation(new_dct, new_schedule):
-    animation = visualize.Animation(new_dct, new_schedule)
+def generate_animation(new_problem, new_schedule):
+    animation = visualize.Animation(new_problem, new_schedule)
     animation.show()
 
 
-def main_inv_mapf(example_number, agent_name, desired_path=None):
-    problem_file = EXAMPLES_PATH + "/agents5/map_8by8_obst12_agents5_ex" + example_number + ".yaml"
+def main_inv_mapf(problem_file, agent_name):
+    # Parsing and generating CBS solution of original problem file
     generate_cbs_solution(problem_file)
     raw_problem = parse_yaml(problem_file)
-    if desired_path is None:
+
+    # Handling desired path of the agent
+    desired_path = []
+    for agent in raw_problem['agents']:
+        if agent['name'] == agent_name and agent.get('waypoints') is not None:
+            desired_path = agent['waypoints']
+            print(desired_path)
+    if len(desired_path) == 0:
         desired_path = create_desired_path(raw_problem, agent_name)
+
+    # Multi-Agent ISP
     raw_solution = parse_yaml(SOLUTION_YAML)
     graph = create_graph(raw_problem)
     new_obstacles = inv_mapf(graph, raw_solution, desired_path, agent_name)
+
+    # Create new schedule and problem dict and created a new problem yaml file
     new_schedule = create_new_schedule(raw_solution, desired_path, agent_name)
-    new_dct = create_new_dct(raw_problem, desired_path, agent_name, new_obstacles)
-    new_filename = "new_map.yaml"
-    create_yaml(new_dct, new_filename)
+    new_problem = create_new_problem(raw_problem, desired_path, agent_name, new_obstacles)
+    new_filename = "new_problem.yaml"
+    create_yaml(new_problem, new_filename)
+
+    # Sanity Check
     generate_cbs_solution(new_filename)
     new_cbs_solution = parse_yaml(SOLUTION_YAML)
-    sanity_check(new_cbs_solution, raw_solution, agent_name, desired_path)
-    return new_dct, new_schedule
+    success = sanity_check(new_cbs_solution, agent_name, desired_path)
+
+    # Return
+    return new_problem, new_schedule, success
 
 
 if __name__ == '__main__':
     # Terminal Parser
     parser = argparse.ArgumentParser()
-    parser.add_argument("ex_no", help="input file example number")
+    parser.add_argument("problem_file", help="input problem filepath")
     parser.add_argument("agent_name", help="the agent that will have a new desired path")
     args = parser.parse_args()
     # Main SP Function
-    ## This custom desired path should create new obstacles, but the algorithm does not currently ##
-    custom_dp = [(7, 4), (7, 5), (7, 6), (7, 7), (6, 7), (5, 7), (5, 6), (5, 5), (5, 4)]
-    new_dct, new_schedule = main_inv_mapf(args.ex_no, args.agent_name, custom_dp)
-    generate_animation(new_dct, new_schedule)
+    new_problem, new_schedule, success = main_inv_mapf(args.problem_file, args.agent_name)
+    generate_animation(new_problem, new_schedule)
