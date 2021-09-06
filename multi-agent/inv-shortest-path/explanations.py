@@ -131,7 +131,7 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name):
     # Desired x
     xzero = np.zeros(len(edges))
     for p in range(len(desired_path) - 1):
-        j = edge_t_2idx[((desired_path[p], desired_path[p + 1]), p)]
+        j = edge_t_2idx[((tuple(desired_path[p]), tuple(desired_path[p + 1])), p)]
         xzero[j] = 1
 
     # - inverse optimization problem -
@@ -232,6 +232,7 @@ def sanity_check(new_cbs_solution, agent_name, desired_path):
 def generate_cbs_solution(filepath):
     os.chdir(CBS_DIR_PATH)
     subprocess.run('./cbs -i ' + filepath + ' -o output.yaml', shell=True, capture_output=True)
+    os.chdir(ROOT_PATH)
 
 
 def generate_animation(new_problem, new_schedule):
@@ -241,8 +242,9 @@ def generate_animation(new_problem, new_schedule):
 
 def main_inv_mapf(problem_file, agent_name):
     # Parsing and generating CBS solution of original problem file
-    generate_cbs_solution(problem_file)
-    raw_problem = parse_yaml(problem_file)
+    problem_fullpath = EXAMPLES_PATH + "/" + problem_file
+    generate_cbs_solution(problem_fullpath)
+    raw_problem = parse_yaml(problem_fullpath)
 
     # Handling desired path of the agent
     desired_path = []
@@ -261,7 +263,7 @@ def main_inv_mapf(problem_file, agent_name):
     # Create new schedule and problem dict and created a new problem yaml file
     new_schedule = create_new_schedule(raw_solution, desired_path, agent_name)
     new_problem = create_new_problem(raw_problem, desired_path, agent_name, new_obstacles)
-    new_filename = "new_problem.yaml"
+    new_filename = "additional/build/new_problem.yaml"
     create_yaml(new_problem, new_filename)
 
     # Sanity Check
@@ -281,4 +283,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # Main SP Function
     new_problem, new_schedule, success = main_inv_mapf(args.problem_file, args.agent_name)
-    generate_animation(new_problem, new_schedule)
+    # generate_animation(new_problem, new_schedule)
