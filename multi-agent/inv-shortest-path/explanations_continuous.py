@@ -8,9 +8,9 @@ from path import *
 from additional import visualize
 
 
-def create_problem_yaml(problem_dct, filename):
+def create_yaml(data, filename):
     with open(filename, 'w') as stream:
-        yaml.dump(problem_dct, stream, default_flow_style=None)
+        yaml.dump(data, stream)
         print(filename, "created successfully")
 
 
@@ -38,7 +38,7 @@ def create_graph(raw_dict):
     return graph
 
 
-def inv_mapf(graph, raw_solution, desired_path, agent_name, verbose=False):
+def inv_mapf(graph, raw_solution, desired_path, agent_name):
     # Extract Solution Data with specified agent stored separately.
     ori_makespan = raw_solution['statistics']['makespan']
     schedule = raw_solution['schedule']
@@ -61,13 +61,13 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name, verbose=False):
     # Determine max t
     max_t = max(len(desired_path) - 1, ori_makespan)
 
-    # l_original
-    l_original = []
+    # w_original
+    w_original = []
     for i, n in enumerate(graph.nodes):
         if graph.nodes[n].get('obstacle'):
-            l_original.append(1)
+            w_original.append(100)
         else:
-            l_original.append(0)
+            w_original.append(1)
 
     # occupied_nodes[t] = list of edges corresponding to movement of agents (except agent0)
     # from time=t to time=t+1
@@ -99,17 +99,14 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name, verbose=False):
             for next_node in next_nodes:
                 # Check to avoid collisions with other agents
                 if (next_node not in occupied_nodes[min(t, ori_makespan)].values() and
-                        occupied_nodes[min(t, ori_makespan)].get(next_node) != n and
-                        n not in occupied_nodes[min(t, ori_makespan)].keys()):
+                        occupied_nodes[min(t, ori_makespan)].get(next_node) != n):
                     edge = (n, next_node)
                     idx = len(edges)
                     edge_t_2idx[(edge, t)] = idx
                     edges.append(edge)
-    cells = []
     edge2lidx = {}
     node2lidx = {}
     for i, n in enumerate(graph.nodes):
-        cells.append(n)
         node2lidx[n] = i
         edge2lidx[(n, n)] = i
         for nei in graph[n]:
@@ -136,82 +133,43 @@ def inv_mapf(graph, raw_solution, desired_path, agent_name, verbose=False):
         j = edge_t_2idx[((tuple(desired_path[p]), tuple(desired_path[p + 1])), p)]
         xzero[j] = 1
 
-    # Debug Info
-    if verbose:
-        print("-------------------- DEBUG --------------------")
-        print("-------------------- MAX T --------------------")
-        print(max_t)
-        print("-------------------- OCCUPIED NODES --------------------")
-        for t, dct in enumerate(occupied_nodes):
-            print(t, dct)
-        print("-------------------- EDGES --------------------")
-        for i, e in enumerate(edges):
-            print(i, e)
-        print("-------------------- EDGE_T TO INDEX --------------------")
-        for e in edge_t_2idx.items():
-            print(e)
-        print("-------------------- EDGE TO L INDEX --------------------")
-        for e in edge2lidx.items():
-            print(e)
-        print("-------------------- NODE TO L INDEX --------------------")
-        for e in node2lidx.items():
-            print(e)
-        print("-------------------- MATRIX A --------------------")
-        for r, edges_set in enumerate(A):
-            node = cells[r % len(cells)]
-            t = r // len(cells)
-            print("----- ROW:", r, "NODE:", node, "T:", t, "-----")
-            for i, v in enumerate(edges_set):
-                if round(v) == 1 or round(v) == -1:
-                    print(edges[i], v)
-        print("-------------------- L ORIGINAL --------------------")
-        for i, v in enumerate(l_original):
-            if round(v) == 1:
-                print(i, cells[i], v)
-        print("-------------------- X ZERO --------------------")
-        for i, v in enumerate(xzero):
-            if round(v) == 1:
-                print(i, edges[i], v)
-        print("-------------------- DEBUG --------------------")
-
     # - inverse optimization problem -
     # Variables
-    l_ = cp.Variable(len(l_original), boolean=True)
+    w_ = cp.Variable(len(w_original))
     pi_ = cp.Variable(len(graph.nodes) * (max_t + 1))
     lambda_ = cp.Variable(len(edges))
     # Cost
-    cost = cp.norm1(l_ - l_original)
+    cost = cp.norm1(w_ - w_original)
     # Constraints
     constraints = []
     for j, edge in enumerate(edges):
         i = edge2lidx[edge]
-        edge_w = l_[i] * 1000 + 1
         if xzero[j] == 1:
             # sum_i a_ij * pi_i = edge_w,              for all j in desired path
-            constraints.append(cp.sum(cp.multiply(A[:, j], pi_)) == edge_w)
+            constraints.append(cp.sum(cp.multiply(A[:, j], pi_)) == w_[i])
         else:
             # sum_i a_ij * pi_i + lambda_j = edge_w,   for all j not in desired path
-            constraints.append(cp.sum(cp.multiply(A[:, j], pi_)) + lambda_[j] == edge_w)
+            constraints.append(cp.sum(cp.multiply(A[:, j], pi_)) + lambda_[j] == w_[i])
     # lambda >= 0, for all j not in desired path.
     for j in range(len(edges)):
         if xzero[j] == 0:
-            # NOTE THIS IS DIFFERENT FROM ORIGINAL CONSTRAINTS (ORIGINAL: >= 0)
-            # Otherwise new obstacles are not created
-            constraints.append(lambda_[j] >= 1)
+            constraints.append(lambda_[j] >= 0)
     # l_[node] == 0 for all nodes in other agents' paths
     for n in nodes_passed:
-        constraints.append(l_[node2lidx[n]] == 0)
+        constraints.append(w_[node2lidx[n]] == 1)
     # solve with cvxpy
     prob = cp.Problem(cp.Minimize(cost), constraints)
-    value = prob.solve(solver=cp.GUROBI)
+    value = prob.solve()
     if value == float('inf'):
         print("inverse shortest path FAILED")
         return []
 
     # New obstacles set
+    cells = [n for n in graph.nodes]
     new_obstacles = []
-    for i, v in enumerate(l_.value):
-        if round(v) == 1:
+    for i, v in enumerate(w_.value):
+        print(w_original[i], v, cells[i])
+        if round(v) > 5000:
             new_obstacles.append(list(cells[i]))
 
     # Return
@@ -279,7 +237,7 @@ def generate_animation(new_problem, new_schedule):
     animation.show()
 
 
-def main_inv_mapf(problem_file, agent_name, verbose=False, animate=False):
+def main_inv_mapf(problem_file, agent_name):
     # Parsing and generating CBS solution of original problem file
     problem_fullpath = EXAMPLES_PATH + "/" + problem_file
     generate_cbs_solution(problem_fullpath)
@@ -296,25 +254,21 @@ def main_inv_mapf(problem_file, agent_name, verbose=False, animate=False):
     # Multi-Agent ISP
     raw_solution = parse_yaml(SOLUTION_YAML)
     graph = create_graph(raw_problem)
-    new_obstacles = inv_mapf(graph, raw_solution, desired_path, agent_name, verbose)
+    new_obstacles = inv_mapf(graph, raw_solution, desired_path, agent_name)
 
     # Create new schedule and problem dict and created a new problem yaml file
     new_schedule = create_new_schedule(raw_solution, desired_path, agent_name)
     new_problem = create_new_problem(raw_problem, desired_path, agent_name, new_obstacles)
     new_filename = "additional/build/new_problem.yaml"
-    create_problem_yaml(new_problem, new_filename)
+    create_yaml(new_problem, new_filename)
 
     # Sanity Check
-    generate_cbs_solution(ROOT_PATH + "/" + new_filename)
+    generate_cbs_solution(new_filename)
     new_cbs_solution = parse_yaml(SOLUTION_YAML)
     success = sanity_check(new_cbs_solution, agent_name, desired_path)
 
-    # Animation
-    if animate:
-        generate_animation(new_problem, new_schedule)
-
     # Return
-    return new_problem, success
+    return new_problem, new_schedule, success, new_cbs_solution
 
 
 if __name__ == '__main__':
@@ -322,8 +276,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("problem_file", help="input problem filepath")
     parser.add_argument("agent_name", help="the agent that will have a new desired path")
-    parser.add_argument("-v", "--verbose", action="store_true", help="outputs debug information")
-    parser.add_argument("-a", "--animate", action="store_true", help="shows animation")
     args = parser.parse_args()
     # Main SP Function
-    main_inv_mapf(args.problem_file, args.agent_name, args.verbose, args.animate)
+    new_problem, new_schedule, success, new_cbs_solution = main_inv_mapf(args.problem_file, args.agent_name)
+    generate_animation(new_problem, new_schedule)
