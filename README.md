@@ -1,4 +1,7 @@
-# kurf-2021
+# KURF 2021 - Multi-Agent ISP
+
+### Student: Yonathan Setiawan
+### Supervisor: Dr Martim Brandao
 
 ## Multi-Agent ISP
 
