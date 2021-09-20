@@ -111,8 +111,8 @@ def mapf(graph, raw_solution, agent_name, start, goal):
     prob = cp.Problem(cp.Minimize(cost), [A @ x == b])
     value = prob.solve(solver=cp.ECOS_BB)
     if value == float('inf'):
-        print("shortest path LP failed")
-        return []
+        print("Shortest Path LP FAIL!")
+        return [], False
 
     # Extract path
     path = [start]

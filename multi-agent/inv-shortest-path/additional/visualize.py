@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 import yaml
-import matplotlib
-# matplotlib.use("Agg")
-from matplotlib.patches import Circle, Rectangle, Arrow
-from matplotlib.collections import PatchCollection
+from matplotlib.patches import Circle, Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
-import matplotlib.animation as manimation
 import argparse
-import math
 
-Colors = ['orange']  # , 'blue', 'green']
+Colors = ['orange']
 
 
 class Animation:
-    def __init__(self, map, schedule):
-        self.map = map
+    def __init__(self, old_map, new_map, schedule):
+        self.old_map = old_map
         self.schedule = schedule
+        self.new_map = new_map
 
-        aspect = map["map"]["dimensions"][0] / map["map"]["dimensions"][1]
+        aspect = new_map["map"]["dimensions"][0] / new_map["map"]["dimensions"][1]
 
         self.fig = plt.figure(frameon=False, figsize=(4 * aspect, 4))
         self.ax = self.fig.add_subplot(111, aspect='equal')
@@ -33,8 +29,8 @@ class Animation:
         # create boundary patch
         xmin = -0.5
         ymin = -0.5
-        xmax = map["map"]["dimensions"][0] - 0.5
-        ymax = map["map"]["dimensions"][1] - 0.5
+        xmax = new_map["map"]["dimensions"][0] - 0.5
+        ymax = new_map["map"]["dimensions"][1] - 0.5
 
         # self.ax.relim()
         plt.xlim(xmin, xmax)
@@ -45,15 +41,28 @@ class Animation:
         # self.ax.axis('tight')
         # self.ax.axis('off')
 
+        # MODIFIED BY Yonathan Setiawan
+        # to show new and deleted obstacles.
+        new_map_obstacles = set([tuple(o) for o in new_map['map']['obstacles']])
+        old_map_obstacles = set([tuple(o) for o in old_map['map']['obstacles']])
+        common_obstacles = new_map_obstacles & old_map_obstacles
+        deleted_obstacles = old_map_obstacles - new_map_obstacles
+        new_obstacles = new_map_obstacles - old_map_obstacles
         self.patches.append(Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, facecolor='none', edgecolor='red'))
-        for o in map["map"]["obstacles"]:
+        for o in common_obstacles:
             x, y = o[0], o[1]
             self.patches.append(Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor='red', edgecolor='red'))
+        for o in deleted_obstacles:
+            x, y = o[0], o[1]
+            self.patches.append(Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor='lightsteelblue', edgecolor='lightsteelblue'))
+        for o in new_obstacles:
+            x, y = o[0], o[1]
+            self.patches.append(Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor='darkviolet', edgecolor='darkviolet'))
 
         # create agents:
         self.T = 0
         # draw goals first
-        for d, i in zip(map["agents"], range(0, len(map["agents"]))):
+        for d, i in zip(new_map["agents"], range(0, len(new_map["agents"]))):
             if "goal" in d:
                 goals = [d["goal"]]
             if "potentialGoals" in d:
@@ -63,7 +72,7 @@ class Animation:
                     Rectangle((goal[0] - 0.25, goal[1] - 0.25), 0.5, 0.5, facecolor=Colors[i % len(Colors)],
                               edgecolor='black', alpha=0.5))
 
-        for d, i in zip(map["agents"], range(0, len(map["agents"]))):
+        for d, i in zip(new_map["agents"], range(0, len(new_map["agents"]))):
             name = d["name"]
             self.agents[name] = Circle((d["start"][0], d["start"][1]), 0.3, facecolor=Colors[i % len(Colors)],
                                        edgecolor='black')
