@@ -1,7 +1,9 @@
 # KURF 2021 - Multi-Agent ISP
 
 King’s Undergraduate Research Fellowship (KURF)
+
 Student: Yonathan Setiawan
+
 Supervisor: Dr Martim Brandao
 
 M. Brandao and Y. Setiawan, “’Why Not This MAPF Plan Instead?’ Contrastive Map-based Explanations for Optimal MAPF,” in ICAPS 2022 Workshop on Explainable AI Planning (XAIP), 2022.
